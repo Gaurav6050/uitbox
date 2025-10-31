@@ -1,0 +1,219 @@
+<template>
+  <!-- lightning button for open modal window -->
+  <lightning-card>
+    <div class="slds-grid">
+      <lightning-button variant="brand" label="New Ticket" title="New Ticket" onclick={openScreen1}
+        class="slds-align_absolute-center">
+      </lightning-button>
+      
+        <lightning-button class="slds-align_absolute-center" variant="brand" label="AI New Ticket" title="AI New Ticket" onclick={openAITicketModal}></lightning-button>
+      
+      <lightning-button variant="brand" label="New Compliance Challenge" title="New Compliance Challenge"
+        onclick={openCompliance} class="slds-align_absolute-center">
+      </lightning-button>
+    </div>
+  </lightning-card>
+
+  <template if:true={Screen1}>
+    <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+      <div class="slds-modal__container">
+        <lightning-button-icon icon-name="utility:close" alternative-text="Close"
+          class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick={handleCloseModal}>
+        </lightning-button-icon>
+        <lightning-card>
+          <lightning-record-edit-form object-api-name="Ticket__c">
+            <lightning-input-field field-name="Driver__c" value={caseDriver} onchange={handleDriverChange}>
+            </lightning-input-field>
+            <lightning-input-field field-name="Date_of_Ticket__c" onchange={handleDateOfTicketChange}>
+            </lightning-input-field>
+            <footer class="slds-card__footer">
+              <lightning-button variant="brand" label="Next" onclick={handleStatusChange}></lightning-button>
+            </footer>
+          </lightning-record-edit-form>
+        </lightning-card>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
+
+  <template if:true={isModalOpen}>
+    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+      aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_small">
+      <div class="slds-modal__container">
+        <template if:true={spinnerStatus}>
+          <div class="spinner">
+            <lightning-spinner variant="brand" alternative-text="Loading..."></lightning-spinner>
+          </div>
+        </template>
+        <template if:true={showTicketExists}>
+          <header class="slds-modal__header">
+            <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
+              onclick={closeModal}>
+              <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small">
+              </lightning-icon>
+              <span class="slds-assistive-text">Close</span>
+            </button>
+            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">
+              Ticket Already Exists
+            </h2>
+          </header>
+          <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+            <p>Would you like to create a new one?</p>
+          </div>
+          <footer class="slds-modal__footer">
+            <button class="slds-button slds-button_neutral" type="reset" onclick={closeModal} title="Cancel">
+              Cancel
+            </button>
+            <button class="slds-button slds-button_brand" type="submit" onclick={openCreateTicket} title="OK">
+              Yes
+            </button>
+          </footer>
+        </template>
+
+        <template if:true={showCreateTicket}>
+          <lightning-record-edit-form object-api-name="Ticket__c" onsuccess={handleSuccess} onerror={handleError}
+            onsubmit={handleSubmit}>
+            <lightning-messages></lightning-messages>
+            <header class="slds-modal__header">
+              <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
+                onclick={closeModal}>
+                <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                  size="small"></lightning-icon>
+                <span class="slds-assistive-text">Close</span>
+              </button>
+              <h2 id="modal-heading-02" class="slds-text-heading_medium slds-hyphenate">
+                New Ticket
+              </h2>
+            </header>
+
+            <div class="slds-modal__content slds-p-around_medium slds-scrollable" id="modal-content-id-2"
+              style="height: 450px">
+              <!-- ALL THE lightning-input-field sections remain the same -->
+              <h3 class="test-id__section-header-container slds-section__title slds-theme--shade">
+                <span class="test-id__section-header-title section-header-title slds-p-horizontal--small">Status</span>
+              </h3>
+              <div class="slds-grid">
+                <div class="slds-col slds-size_1-of-2">
+                  <lightning-input-field field-name={violationDescription}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={violationCategory}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={accident}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={driverLicenseType}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={DriverCoverageOpportunity} value={OppId}></lightning-input-field>
+                  <lightning-input-field field-name={DriverCoverageStatus} value={driverCoverage}>
+                  </lightning-input-field>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                  <lightning-input-field field-name={ticketStatus} onchange={handleChange}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={tickettype} value={TicketType}></lightning-input-field>
+                  <template if:true={showOutcome}>
+                    <lightning-input-field field-name={outcome} value={ticketOutcomeValue}>
+                    </lightning-input-field>
+                  </template>
+                  <div class="slds-hide">
+                    <lightning-input-field field-name={ticketType} value={ticketTypeValue}>
+                    </lightning-input-field>
+                  </div>
+                </div>
+              </div>
+              <h3 class="test-id__section-header-container slds-section__title slds-theme--shade">
+                <span
+                  class="test-id__section-header-title section-header-title slds-p-horizontal--small">Information</span>
+              </h3>
+              <div class="slds-grid">
+                <div class="slds-col slds-size_1-of-2">
+                  <lightning-input-field field-name="Date_of_Ticket__c">
+                  </lightning-input-field>
+                  <lightning-input-field field-name={courtDate}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={ticketCourt}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={court}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={courtPhoneNumber}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={ticketCity}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={ticketCountry}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={ticketState}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={citationNumber}>
+                  </lightning-input-field>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                  <lightning-input-field field-name={dateEntered}>
+                  </lightning-input-field>
+                  <lightning-input-field field-name="Driver__c" onchange={handleChange} value={caseDriver} required>
+                  </lightning-input-field>
+                  <lightning-input-field field-name={comments} value={specialInstructions}>
+                  </lightning-input-field>
+                </div>
+              </div>
+              <div class="slds-col slds-size_1-of-1">
+                <lightning-input-field field-name={developerNotes}>
+                </lightning-input-field>
+              </div>
+              <h3 class="test-id__section-header-container slds-section__title slds-theme--shade">
+                <span class="test-id__section-header-title section-header-title slds-p-horizontal--small">System
+                  Information</span>
+              </h3>
+              <div class="slds-grid">
+                <div class="slds-col slds-size_1-of-2">
+                  <lightning-output-field field-name={owner}>
+                  </lightning-output-field>
+                </div>
+              </div>
+            </div>
+
+            <footer class="slds-modal__footer slds-grid slds-grid_align-spread">
+                <div>
+                    <div class="slds-form-element">
+                        <div class="slds-form-element__control">
+                            <div class="slds-checkbox">
+                                <input type="checkbox" name="compliance-checkbox" id="compliance-checkbox-id" onchange={handleComplianceCheckboxChange} />
+                                <label class="slds-checkbox__label" for="compliance-checkbox-id">
+                                    <span class="slds-checkbox_faux"></span>
+                                    <span class="slds-form-element__label">Create New Compliance Challenge</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <button class="slds-button slds-button_neutral" type="reset" onclick={closeModal} title="Cancel">
+                        Cancel
+                    </button>
+                    <button class="slds-button slds-button_brand" type="submit" title="OK">
+                        Save
+                    </button>
+                </div>
+            </footer>
+          </lightning-record-edit-form>
+        </template>
+      </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+  </template>
+
+  <template if:true={showChildComponent}>
+    <c-basic case-record-id={currentRecordId} target-record-id={targetRecordForFiles}
+      preselect-all-files={preSelectFiles} onfilesattached={handleFilesAttached} oncancel={handleBasicCancel}>
+    </c-basic>
+  </template>
+
+  <template if:true={showCompliance}>
+    <c-create-compliance oncancel={handleComplianceCancel} onsuccess={handleComplianceSuccess} carrier-id={carrierId}
+      driver-id={caseDriver} case-id={recordId} ticket-id={ticketIdForNewCompliance}>
+    </c-create-compliance>
+  </template>
+
+  <template lwc:if={isAITicketModalOpen}>
+    <c-ai-ticket-modal-enhanced case-id={recordId} onclosemodal={closeAITicketModal} onticketsaved={handleAiTicketSave}></c-ai-ticket-modal-enhanced>
+  </template>
+
+</template>

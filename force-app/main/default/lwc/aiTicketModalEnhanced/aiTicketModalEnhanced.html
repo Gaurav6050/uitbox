@@ -1,0 +1,495 @@
+<template>
+    <!-- ======================= SCREEN 1: IMAGE and OCR FIELDS ======================= -->
+    <template lwc:if={showImageAndOcrScreen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="ai-ticket-modal-heading"
+            class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class="slds-modal__container">
+                <template lwc:if={showOverallSpinner}> 
+                    <div class="slds-is-relative slds-align_absolute-center modal-spinner-container">
+                        <lightning-spinner alternative-text="Processing..." size="medium"></lightning-spinner>
+                    </div>
+                </template>
+                <button class="slds-button slds-button_icon slds-modal__close" title="Close" onclick={handleClose}>
+                    <lightning-icon icon-name="utility:close" alternative-text="Close" size="small" variant="bare"></lightning-icon>
+                    <span class="slds-assistive-text">Cancel and close</span>
+                </button>
+                <div class="slds-modal__header">
+                    <h1 id="ai-ticket-modal-heading" class="slds-modal__title slds-hyphenate" tabindex="-1">File Viewer & Details</h1>
+                    <p class="slds-m-top_x-small">
+                        <template lwc:if={hasFiles}>
+                            <span lwc:if={hasMultipleImages}>File {currentImageNumber} of {totalImages}: {currentImageNameForHeader}. </span>
+                            <span lwc:else>File: {currentImageNameForHeader}. </span>
+                            <span lwc:if={isCurrentImageAnImage}>Hover to zoom, click to lock.</span>
+                        </template>
+                        <template lwc:else>
+                            <span>{currentImageNameForHeader}</span>
+                        </template>
+                    </p>
+                </div>
+                <div class="slds-modal__content slds-p-around_medium" id="ai-ticket-modal-content">
+                    <!-- ... (no changes to loading/error/summary views) ... -->
+                    <template lwc:if={showLoadingView}>
+                        <div class="slds-is-relative loading-container" style="height: 500px;">
+                            <lightning-spinner alternative-text="Loading..." size="large"></lightning-spinner>
+                        </div>
+                    </template>
+                    <template lwc:elseif={showTicketExistsView}>
+                        <div class="processing-container">
+                            <h2 class="slds-text-heading_large">Ticket Already Exists</h2>
+                            <p class="slds-text-color_weak slds-m-vertical_medium">A ticket has already been created for this case. How would you like to proceed?</p>
+                        </div>
+                    </template>
+                    <template lwc:elseif={showErrorView}>
+                         <div class="slds-align_absolute-center slds-p-around_large" style="height: 500px;">
+                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                                <span class="slds-assistive-text">Error</span>
+                                <h2>{overallErrorMessage}</h2>
+                            </div>
+                        </div>
+                    </template>
+                    <template lwc:elseif={showNoFilesStaticView}>
+                        <div class="processing-container">
+                            <div class="processing-illustration"></div>
+                            <h2 class="slds-text-heading_large slds-m-top_large">No Files to Review</h2>
+                            <p class="slds-text-color_weak">No ticket image or PDF files have been processed for this case yet.</p>
+                        </div>
+                    </template>
+                    <template lwc:elseif={showNoFilesInitialView}>
+                        <div class="processing-container">
+                             <div class="processing-illustration"></div>
+                            <h2 class="slds-text-heading_large slds-m-top_large">File Processing Required</h2>
+                            <template lwc:if={hasUnprocessedFiles}>
+                                <p class="slds-text-color_weak">Some files for this case need to be analyzed to extract ticket details. You can process them now.</p>
+                                <ul class="file-list">
+                                    <template for:each={unprocessedFiles} for:item="file">
+                                        <li key={file.Id} class="file-list-item">
+                                            <lightning-icon icon-name="doctype:unknown" class="file-icon" size="small"></lightning-icon>
+                                            <span class="file-name" title={file.Name}>{file.Name}</span>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </template>
+                            <template lwc:else>
+                                <p class="slds-text-color_weak">No processed or unprocessed ticket files were found for this case.</p>
+                            </template>
+                        </div>
+                    </template>
+                    <template lwc:elseif={showProcessingView}>
+                        <div class="processing-container">
+                            <lightning-spinner alternative-text="Processing..." size="large"></lightning-spinner>
+                            <h2 class="slds-text-heading_large slds-m-top_medium">Analyzing Files</h2>
+                            <p class="slds-text-color_weak">Please wait while we extract data from your documents. This may take a moment.</p>
+                        </div>
+                    </template>
+                    <template lwc:elseif={showSummaryView}>
+                        <div class="processing-container">
+                            <h2 class="slds-text-heading_large">Processing Complete</h2>
+                            <p class="slds-text-color_weak">Review the status of each file below.</p>
+                            <ul class="file-list">
+                                <template for:each={processingSummaryForDisplay} for:item="result">
+                                    <li key={result.fileId} class="file-list-item">
+                                        <lightning-icon icon-name={result.icon} class="file-icon" size="small"></lightning-icon>
+                                        <span class="file-name" title={result.fileName}>{result.fileName}</span>
+                                        <span class={result.badgeClass}>{result.badgeLabel}</span>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+                    </template>
+                    <template lwc:elseif={showViewer}>
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of_1 slds-large-size_7-of-12 image-section">
+                                <!-- ... (image viewer code is unchanged) ... -->
+                                <div class="image-viewer">
+                                    <div class="scroll-wrapper"
+                                        onmousedown={handleViewerMouseDown}
+                                        onmousemove={handleViewerMouseMovePanning}
+                                        onmouseleave={handleViewerMouseLeavePanning}
+                                        onmouseup={handleViewerMouseUpPanning}>
+                                        
+                                        <template lwc:if={isCurrentImageAnImage}>
+                                            <div class="image-container"
+                                                onmouseenter={handleImageMouseEnter}
+                                                onmousemove={handleImageMouseMoveForHoverZoom}
+                                                onmouseleave={handleImageMouseLeave}
+                                                onclick={handleImageClickToLock}>
+                                                <div lwc:if={showImageLoadingSpinner} class="image-loading-placeholder">
+                                                    <lightning-spinner alternative-text="Loading image..." size="medium"></lightning-spinner>
+                                                    <p class="slds-m-top_small slds-text-align_center">Loading: {currentImageName}...</p>
+                                                </div>
+                                                <img src={currentFileUrl} alt={currentImageName} class="zoomable-image" />
+                                            </div>
+                                        </template>
+
+                                        <template lwc:if={isCurrentImageAPdf}>
+                                            <iframe src={currentFileUrl} class="pdf-viewer" title={currentImageName}></iframe>
+                                        </template>
+
+                                    </div>
+                                    <div class="image-controls" lwc:if={showMainImageControls}>
+                                        <lightning-button-icon lwc:if={hasMultipleImages} icon-name="utility:chevronleft" variant="border-filled" alternative-text="Previous File" title="Previous File" onclick={handlePreviousImage} disabled={isPreviousDisabled}></lightning-button-icon>
+                                        <lightning-button-icon icon-name="utility:expand_alt" variant="border-filled" alternative-text="Full Screen Preview" title="Full Screen Preview" onclick={enterFullScreen}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={isCurrentImageAnImage} icon-name="utility:rotate" variant="border-filled" alternative-text="Rotate Image" title="Rotate Image" onclick={handleRotateImage}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={isCurrentImageAnImage_and_isZoomLocked} icon-name="utility:zoomin" variant="border-filled" alternative-text="Zoom In Further" title="Zoom In Further" onclick={handleLockedZoomIn}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={isCurrentImageAnImage_and_isZoomLocked} icon-name="utility:zoomout" variant="border-filled" alternative-text="Zoom Out" title="Zoom Out" onclick={handleLockedZoomOut}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={isCurrentImageAnImage_and_isZoomLocked} icon-name="utility:unlock" variant="border-filled" alternative-text="Unlock Zoom" title="Unlock Zoom and Reset" onclick={unlockAndResetZoom}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={hasMultipleImages} icon-name="utility:chevronright" variant="border-filled" alternative-text="Next File" title="Next File" onclick={handleNextImage} disabled={isNextDisabled}></lightning-button-icon>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="slds-col slds-size_1-of_1 slds-large-size_5-of_12 fields-section slds-p-left_large">
+                                <h4 lwc:if={showOcrFieldsHeader}>Verified Details from All Files</h4>
+                                
+                                <div lwc:if={showMainOverallFieldsLoading} class="slds-align_absolute-center slds-m-top_large">
+                                    <lightning-spinner alternative-text="Loading details..." size="small"></lightning-spinner>
+                                </div>
+                                <div lwc:elseif={showMainFieldsErrorMessage} class="slds-text-color_error slds-m-top_small">
+                                    <p>{fieldsErrorMessage}</p>
+                                </div>
+                                <div lwc:elseif={showMainNoOcrDataMessage} class="slds-text-color_weak slds-m-top_small">
+                                    <p>{noFieldsDataMessage}</p>
+                                </div>
+                                
+                                <div lwc:else class="ocr-fields-container">
+                                    <!-- DRIVER SECTION -->
+                                    <div class="slds-p-vertical_small driver-field-section">
+                                        <lightning-record-edit-form object-api-name="Ticket__c">
+                                            <lightning-input-field field-name={ticketFields.driver} value={currentDriverId} onchange={handleDriverFieldFormChange}></lightning-input-field>
+                                        </lightning-record-edit-form>
+                                    </div>
+
+                                    <!-- INLINE COURT SECTION -->
+                                    <div class="slds-p-vertical_small field-section">
+                                        <template lwc:if={isCourtLoading}>
+                                            <lightning-spinner size="small" alternative-text="Loading court..."></lightning-spinner>
+                                        </template>
+                                        <template lwc:else>
+                                            <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+                                                <c-custom-court-lookup
+                                                    class="slds-col"
+                                                    label="Ticket Court"
+                                                    initial-selection={preselectedCourt}
+                                                    onselectionchange={handleCourtSelectionChange}
+                                                    onrequestnewcourt={handleRequestNewCourt}
+                                                    required>
+                                                </c-custom-court-lookup>
+                                                
+                                                <div class="slds-col_bump-left slds-m-top_medium slds-m-left_x-small">
+                                                    <lightning-button-icon 
+                                                        lwc:if={selectedCourtId}
+                                                        icon-name={expandIconName}
+                                                        variant="border-filled" 
+                                                        alternative-text="Edit Court Details" 
+                                                        title="Edit Court Details" 
+                                                        onclick={handleToggleCourtEditor}>
+                                                    </lightning-button-icon>
+                                                </div>
+                                            </div>
+                                            <div lwc:if={isCourtIncomplete} style="margin-left: 13px" class="slds-text-color_error slds-m-top_xx-small">(Incomplete court details)</div>
+                                        </template>
+
+                                        <template lwc:if={isCourtEditorExpanded}>
+                                            <div class="slds-box slds-theme_shade slds-m-top_small">
+                                                <template lwc:if={showDuplicateView}>
+                                                    <h3 class="slds-text-heading_medium slds-m-bottom_small">Duplicate Found</h3>
+                                                    <div class="slds-notify slds-notify_alert slds-theme_warning" role="alert">
+                                                        <span class="slds-assistive-text">Warning</span>
+                                                        <h2>A court with this phone number already exists.</h2>
+                                                    </div>
+                                                    <h3 class="slds-section__title slds-theme_shade slds-m-top_medium">Proposed Changes</h3>
+                                                    <div class="slds-box slds-theme_lightest">
+                                                        <template lwc:if={hasChanges}>
+                                                            <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_fixed-layout">
+                                                                <thead>
+                                                                    <tr class="slds-line-height_reset">
+                                                                        <th class="slds-size_1-of-4" scope="col"><div class="slds-truncate" title="Field">Field</div></th>
+                                                                        <th class="slds-size_2-of-4" scope="col"><div class="slds-truncate" title="Current Value">Current Value</div></th>
+                                                                        <th class="slds-size_2-of-4" scope="col"><div class="slds-truncate" title="New Value">New Value</div></th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <template for:each={changesToDisplay} for:item="change">
+                                                                        <tr key={change.label} class="slds-hint-parent">
+                                                                            <td data-label="Field"><div class="slds-truncate" title={change.label}>{change.label}</div></td>
+                                                                            <td data-label="Current Value"><div class="slds-truncate" title={change.oldValue}><del>{change.oldValue}</del></div></td>
+                                                                            <td data-label="New Value"><div class="slds-truncate" title={change.newValue}><strong>{change.newValue}</strong></div></td>
+                                                                        </tr>
+                                                                    </template>
+                                                                </tbody>
+                                                            </table>
+                                                        </template>
+                                                        <template lwc:else>
+                                                            <p>The information you entered matches the existing record. No updates are needed.</p>
+                                                        </template>
+                                                    </div>
+                                                    <p class="slds-m-top_medium">You can <a onclick={handleOpenRecordInNewTabClick} title="Open existing record in a new tab">open the existing record</a> for more details.</p>
+                                                    <div class="slds-grid slds-gutters slds-m-top_medium">
+                                                        <div class="slds-col">
+                                                            <lightning-button label="Go Back" onclick={handleGoBackClick} class="slds-m-right_x-small"></lightning-button>
+                                                        </div>
+                                                        <div class="slds-col slds-text-align_right">
+                                                            <lightning-button label="Use Existing" onclick={handleUseExistingClick} class="slds-m-right_x-small"></lightning-button>
+                                                            <lightning-button variant="brand" label="Update & Use" onclick={handleUpdateAndUseClick} disabled={isUpdateButtonDisabled}></lightning-button>
+                                                        </div>
+                                                    </div>                                                    
+                                                </template>
+                                                <template lwc:else>
+                                                    <h3 class="slds-text-heading_small slds-m-bottom_small">{courtEditorTitle}</h3>
+                                                    <lightning-input class="slds-m-bottom_x-small" label="Court Name" value={editableCourt.Name} data-field="Name" onchange={handleCourtFieldChange} required></lightning-input>
+                                                    <lightning-input class="slds-m-bottom_x-small" label="County" value={editableCourt.County__c} data-field="County__c" onchange={handleCourtFieldChange}></lightning-input>
+                                                    <lightning-input class="slds-m-bottom_x-small" label="Phone" type="tel" value={editableCourt.Phone__c} data-field="Phone__c" onchange={handleCourtFieldChange} required></lightning-input>
+                                                    <lightning-input class="slds-m-bottom_x-small" label="Street" value={editableCourt.Address__Street__s} data-field="Address__Street__s" onchange={handleCourtFieldChange}></lightning-input>
+                                                    <lightning-input class="slds-m-bottom_x-small" label="City" value={editableCourt.Address__City__s} data-field="Address__City__s" onchange={handleCourtFieldChange}></lightning-input>
+                                                    <lightning-combobox
+                                                        class="slds-m-bottom_x-small"
+                                                        label="State"
+                                                        value={editableCourt.Address__StateCode__s}
+                                                        placeholder="Select a State..."
+                                                        options={stateOptions}
+                                                        data-field="Address__StateCode__s"
+                                                        onchange={handleCourtFieldChange}
+                                                        required>
+                                                    </lightning-combobox>
+                                                    <lightning-input class="slds-m-bottom_x-small" label="ZIP Code" value={editableCourt.Address__PostalCode__s} data-field="Address__PostalCode__s" onchange={handleCourtFieldChange}></lightning-input>
+
+                                                    <div class="slds-grid slds-gutters slds-m-top_medium">
+                                                        <div class="slds-col">
+                                                            <lightning-button label="Google Search" icon-name="utility:search" onclick={handleGoogleSearchClick}></lightning-button>
+                                                        </div>
+                                                        <div class="slds-col slds-text-align_right">
+                                                            <lightning-button label="Cancel" onclick={handleCancelCourtEdit} class="slds-m-right_x-small"></lightning-button>
+                                                            <lightning-button variant="brand" label="Save Court" onclick={handleSaveCourtEdit}></lightning-button>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- COURT & LOCATION DETAILS SECTION -->
+                                    <div class="field-section">
+                                        <h4 class="slds-m-bottom_small">Court & Location Details</h4>
+                                        <template for:each={courtRelatedFields} for:item="field">
+                                            <div key={field.id} class="slds-p-vertical_x-small">
+                                                <label class="slds-form-element__label">{field.fieldLabel}</label>
+                                                <lightning-input 
+                                                    variant="label-hidden" label={field.fieldLabel}
+                                                    data-id={field.id} data-fieldproperty="currentValue" 
+                                                    value={field.currentValue} onchange={handleOcrFieldChange}
+                                                    type={field.inputType} step={field.inputStep}
+                                                    formatter={field.inputFormatter} class="slds-m-bottom_x-small">
+                                                </lightning-input>
+                                                <!-- ACCURATE CHECKBOX AND NOTES REMOVED FROM UI -->
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- OTHER DETAILS SECTION -->
+                                    <template for:each={otherOcrFields} for:item="field">
+                                        <div key={field.id} class="slds-p-vertical_x-small field-section">
+                                            <label class="slds-form-element__label">{field.fieldLabel}</label>
+                                            <template lwc:if={field.isPicklist}>
+                                                <lightning-combobox
+                                                    variant="label-hidden" label={field.fieldLabel}
+                                                    data-id={field.id} data-fieldproperty="currentValue"
+                                                    value={field.currentValue} onchange={handleOcrFieldChange}
+                                                    options={field.picklistOptions} class="slds-m-bottom_x-small">
+                                                </lightning-combobox>
+                                            </template>
+                                            <template lwc:else>
+                                                <lightning-input 
+                                                    variant="label-hidden" label={field.fieldLabel}
+                                                    data-id={field.id} data-fieldproperty="currentValue" 
+                                                    value={field.currentValue} onchange={handleOcrFieldChange}
+                                                    type={field.inputType} step={field.inputStep}
+                                                    formatter={field.inputFormatter} class="slds-m-bottom_x-small">
+                                                </lightning-input>
+                                            </template>
+                                            <!-- ACCURATE CHECKBOX AND NOTES REMOVED FROM UI -->
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="slds-modal__footer slds-modal__footer_directional">
+                    <!-- ... (footer is unchanged) ... -->
+                    <template lwc:if={showTicketExistsView}>
+                        <button class="slds-button slds-button_neutral" onclick={handleClose}>Cancel</button>
+                        <button class="slds-button slds-button_neutral" onclick={handleOpenExistingTicket}>Open Existing Ticket</button>
+                        <button class="slds-button slds-button_brand" onclick={handleProceedToCreate}>Create New Ticket</button>
+                    </template>
+                    <template lwc:else>
+                        <button class="slds-button slds-button_neutral" aria-label="Cancel and close" onclick={handleCancel}>Cancel</button>
+                        <template lwc:if={showViewer}>
+                            <button class="slds-button slds-button_brand" onclick={handleSaveAndNext} disabled={isSaveAndNextDisabled}>
+                                <span lwc:if={isProcessingSaveAndNext}>Processing...</span>
+                                <span lwc:else>Save & Next</span>
+                            </button>
+                        </template>
+                        <template lwc:if={showNoFilesInitialView}>
+                            <button class="slds-button slds-button_brand" onclick={handleProcessFiles} disabled={isProcessFilesButtonDisabled}>Process Files</button>
+                        </template>
+                        <template lwc:if={showSummaryView}>
+                            <button class="slds-button slds-button_brand" onclick={handleContinueFromSummary} disabled={isContinueFromSummaryDisabled}>Continue</button>
+                        </template>
+                    </template>
+                </div>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </template>
+    
+    <!-- ... (Screen 2 and Full Screen view are unchanged) ... -->
+    <template lwc:if={showTicketEditFormScreen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" aria-labelledby="ticket-edit-modal-heading"
+            class="slds-modal slds-fade-in-open slds-modal_large">
+            <div class={modalContainerClasses}>
+                <template lwc:if={isPreparingNextScreen}>
+                    <div class="modal-spinner-container">
+                        <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+                        <p class="slds-m-top_medium">Preparing Form...</p>
+                    </div>
+                </template>
+
+                <lightning-spinner lwc:if={showNewTicketSpinner} alternative-text="Saving..." variant="brand" size="large"></lightning-spinner>
+                <lightning-record-edit-form object-api-name="Ticket__c" 
+                                            onsuccess={handleTicketSaveSuccess}
+                                            onerror={handleTicketSaveError}
+                                            onsubmit={handleTicketSubmit}>
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close" title="Close"
+                            onclick={handleClose}>
+                            <lightning-icon icon-name="utility:close" alternative-text="close" variant="bare" size="small"></lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="ticket-edit-modal-heading" class="slds-text-heading_medium slds-hyphenate">
+                            New Ticket
+                        </h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium slds-scrollable_y" style="height: 65vh;">
+                        <lightning-messages></lightning-messages>
+                        <h3 class="slds-section__title slds-theme--shade slds-p-horizontal_small">Status</h3>
+                        <div class="slds-grid slds-gutters_small slds-p-horizontal_small slds-m-bottom_medium">
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                <lightning-input-field field-name={ticketFields.violationDescription} value={ticketForm_ViolationDescription}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.violationCategory} value={ticketForm_ViolationCategory}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.accident} value={ticketForm_Accident}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.driverLicenseType} value={ticketForm_DriverLicenseType}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.driverCoverageOpportunity} value={ticketForm_OppId}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.driverCoverageStatus} value={ticketForm_DriverCoverage}></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of_1 slds-medium-size_1-of-2">
+                                <lightning-input-field field-name={ticketFields.ticketStatus} onchange={handleTicketStatusChange} value={ticketForm_TicketStatus}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.ticketType} value={ticketForm_TicketType}></lightning-input-field>
+                                <template lwc:if={showTicketOutcomeField}>
+                                    <lightning-input-field field-name={ticketFields.outcome} value={ticketForm_Outcome}></lightning-input-field>
+                                </template>
+                            </div>
+                        </div>
+                        <h3 class="slds-section__title slds-theme--shade slds-p-horizontal_small">Information</h3>
+                        <div class="slds-grid slds-gutters_small slds-p-horizontal_small slds-m-bottom_medium">
+                            <div class="slds-col slds-size_1-of_1 slds-medium-size_1-of-2">
+                                <lightning-input-field field-name={ticketFields.dateOfTicket} value={ticketForm_DateOfTicket}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.courtDate} value={ticketForm_CourtDate}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.ticketCourt} value={ticketForm_TicketCourt}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.court} value={ticketForm_CourtId}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.courtPhoneNumber} value={ticketForm_CourtPhoneNumber}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.ticketCity} value={ticketForm_TicketCity}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.ticketCountry} value={ticketForm_TicketCountry}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.ticketState} value={ticketForm_TicketState}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.citationNumber} value={ticketForm_CitationNumber}></lightning-input-field>
+                            </div>
+                            <div class="slds-col slds-size_1-of_1 slds-medium-size_1-of-2">
+                                <lightning-input-field field-name={ticketFields.dateEntered} value={ticketForm_DateEntered}></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.driver} value={ticketForm_DriverId} required></lightning-input-field>
+                                <lightning-input-field field-name={ticketFields.comments} value={ticketForm_Comments}></lightning-input-field>
+                            </div>
+                        </div>
+                        <div class="slds-grid slds-gutters_small slds-p-horizontal_small slds-m-bottom_medium">
+                            <div class="slds-col slds-size_1-of-1">
+                                <lightning-input-field variant="label-stacked" field-name={ticketFields.developerNotes} value={ticketForm_DeveloperNotes}></lightning-input-field>
+                            </div>
+                        </div>
+                        <h3 class="slds-section__title slds-theme--shade slds-p-horizontal_small">System Information</h3>
+                        <div class="slds-grid slds-gutters_small slds-p-horizontal_small slds-m-bottom_medium">
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                <lightning-output-field field-name={ticketFields.ownerId}></lightning-output-field>
+                            </div>
+                        </div>
+                        <div lwc:if={ticketSaveErrorFeedback} class="slds-notify_container slds-is-relative slds-m-top_small">
+                            <div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_error" role="alert">
+                                <span class="slds-assistive-text">Error</span>
+                                <h2>{ticketSaveErrorFeedback}</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <footer class="slds-modal__footer slds-modal__footer_directional">
+                        <button class="slds-button slds-button_neutral" type="button" onclick={handleClose} title="Cancel">Cancel</button>
+                        <div class="slds-checkbox">
+                            <input type="checkbox" name="compliance-checkbox" id="compliance-checkbox-id" onchange={handleComplianceCheckboxChange} />
+                            <label class="slds-checkbox__label" for="compliance-checkbox-id">
+                                <span class="slds-checkbox_faux"></span>
+                                <span class="slds-form-element__label"> Create New Compliance Challenge</span>
+                            </label>
+                        </div>
+                        <button class="slds-button slds-button_neutral" type="button" onclick={handleGoToPreviousScreen} title="Previous">Previous</button>
+                        <button class="slds-button slds-button_brand" type="submit" title="Save Ticket" disabled={showNewTicketSpinner}>Save Ticket</button>
+                    </footer>
+                </lightning-record-edit-form>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+    </template>
+    <div lwc:if={isFullScreenPreview} class="fullscreen-overlay" role="dialog" aria-modal="true" aria-label="Full screen file preview">
+        <button class="slds-button slds-button_icon fullscreen-close-button" title="Close full screen" onclick={exitFullScreen}>
+            <lightning-icon icon-name="utility:close" alternative-text="Close full screen" size="large" variant="bare-inverse"></lightning-icon>
+            <span class="slds-assistive-text">Close full screen preview</span>
+        </button>
+        <template lwc:if={hasMultipleImages}>
+            <button class="slds-button slds-button_icon fullscreen-prev-button" title="Previous File" onclick={handleFullScreenPrevious} disabled={isFullScreenPreviousDisabled}>
+                <lightning-icon icon-name="utility:chevronleft" alternative-text="Previous File" size="large" variant="bare-inverse"></lightning-icon>
+                <span class="slds-assistive-text">Previous File</span>
+            </button>
+            <button class="slds-button slds-button_icon fullscreen-next-button" title="Next File" onclick={handleFullScreenNext} disabled={isFullScreenNextDisabled}>
+                <lightning-icon icon-name="utility:chevronright" alternative-text="Next File" size="large" variant="bare-inverse"></lightning-icon>
+                <span class="slds-assistive-text">Next File</span>
+            </button>
+        </template>
+        <div class="fullscreen-content-wrapper">
+            <template lwc:if={isFullScreenFileAnImage}>
+                <img src={currentFileUrl} alt={currentImageName} class="fullscreen-image" style={fullScreenImageStyle} />
+            </template>
+            <template lwc:if={isFullScreenFileAPdf}>
+                <iframe src={currentFileUrl} title={currentImageName} class="fullscreen-pdf"></iframe>
+            </template>
+        </div>
+        <div class="fullscreen-bottom-controls">
+            <lightning-button-icon 
+                lwc:if={isFullScreenFileAnImage} 
+                icon-name="utility:zoomout" 
+                variant="border-filled" 
+                alternative-text="Zoom Out" 
+                title="Zoom Out" 
+                onclick={handleFullScreenZoomOut}
+                disabled={isFullScreenZoomOutDisabled}></lightning-button-icon>
+             <lightning-button-icon 
+                lwc:if={isFullScreenFileAnImage} 
+                icon-name="utility:rotate" 
+                variant="border-filled" 
+                alternative-text="Rotate Image" 
+                title="Rotate Image" 
+                onclick={handleFullScreenRotate}></lightning-button-icon>
+            <p class="fullscreen-file-name">{currentImageNameForHeader}</p>
+            <lightning-button-icon 
+                lwc:if={isFullScreenFileAnImage}
+                icon-name="utility:zoomin" 
+                variant="border-filled" 
+                alternative-text="Zoom In" 
+                title="Zoom In" 
+                onclick={handleFullScreenZoomIn}></lightning-button-icon>
+        </div>
+    </div>
+</template>

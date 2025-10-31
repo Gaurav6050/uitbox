@@ -1,0 +1,137 @@
+<template>
+    <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" class="slds-modal slds-fade-in-open slds-modal_large">
+        <div class="slds-modal__container">
+            <template if:true={isLoading}>
+                <div class="spinner-overlay">
+                    <lightning-spinner alternative-text="Saving..." variant="brand" size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <header class="slds-modal__header">
+                <button class="slds-button slds-button_icon slds-modal__close" title="Close" onclick={handleCancel}>
+                    <lightning-icon icon-name="utility:close" alternative-text="close" variant="bare" size="small"></lightning-icon>
+                    <span class="slds-assistive-text">Close</span>
+                </button>
+                <h2 id="modal-heading-01" class="slds-modal__title slds-hyphenate">
+                    New Compliance Challenge
+                </h2>
+                <template lwc:if={hasFiles}>
+                    <div class="slds-grid"> 
+                            <div class="slds-col slds-size_3-of-12">
+                                <lightning-combobox
+                                    lwc:if={hasMultipleImages}
+                                    label="Current File You Are Viewing"
+                                    value={currentFileIndexValue}
+                                    placeholder="Select a file to view..."
+                                    options={fileOptions}
+                                    onchange={handleFileSelectionChange}
+                                    class="slds-m-top_small file-selector-combobox"
+                                    field-level-help="Select a file to view."
+                                ></lightning-combobox>
+                        </div>               
+                    </div>
+                </template>
+                <template lwc:else>
+                    <p class="slds-m-top_small slds-text-color_weak">Current File: {currentFileName}</p>
+                </template>
+            </header>
+
+            <div class="slds-modal__content slds-p-around_medium">
+                <div class="slds-grid slds-gutters">
+                    <!-- Left Column: File Viewer -->
+                    <div class="slds-col slds-size_1-of_1 slds-large-size_7-of-12">
+                        <div class="image-section">
+                             <div class="image-viewer">
+                                <template if:false={hasFiles}>
+                                    <div class="slds-align_absolute-center slds-text-color_weak">
+                                        {viewerErrorMessage}
+                                    </div>
+                                </template>
+                                <template if:true={hasFiles}>
+                                    <div class="scroll-wrapper" 
+                                        onmousedown={handleViewerMouseDown}
+                                        onmousemove={handleViewerMouseMovePanning}
+                                        onmouseup={handleViewerMouseUpPanning}>
+
+                                        <template lwc:if={isCurrentImageAnImage}>
+                                            <div class="image-container" 
+                                                onmouseenter={handleImageMouseEnter}
+                                                onmousemove={handleImageMouseMoveForHoverZoom}
+                                                onmouseleave={handleImageMouseLeave}
+                                                onclick={handleImageClickToLock}>
+                                                
+                                                <div lwc:if={showImageLoadingSpinner} class="image-loading-placeholder">
+                                                    <lightning-spinner size="medium"></lightning-spinner>
+                                                </div>
+                                                <img src={currentFileUrl} alt={currentFileName} class="zoomable-image" />
+                                            </div>
+                                        </template>
+                                        <template lwc:if={isCurrentImageAPdf}>
+                                            <iframe src={currentFileUrl} class="pdf-viewer" title={currentFileName}></iframe>
+                                        </template>
+                                    </div>
+                                     <div class="image-controls" lwc:if={showMainImageControls}>
+                                        <lightning-button-icon lwc:if={hasMultipleImages} icon-name="utility:chevronleft" variant="border-filled" title="Previous File" onclick={handlePreviousImage} disabled={isPreviousDisabled}></lightning-button-icon>
+                                        <lightning-button-icon icon-name="utility:expand_alt" variant="border-filled" title="Full Screen" onclick={enterFullScreen}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={isCurrentImageAnImage} icon-name="utility:rotate" variant="border-filled" title="Rotate Image" onclick={handleRotateImage}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={isCurrentImageAnImage_and_isZoomLocked} icon-name="utility:zoomin" variant="border-filled" title="Zoom In" onclick={handleLockedZoomIn}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={isCurrentImageAnImage_and_isZoomLocked} icon-name="utility:zoomout" variant="border-filled" title="Zoom Out" onclick={handleLockedZoomOut}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={isCurrentImageAnImage_and_isZoomLocked} icon-name="utility:unlock" variant="border-filled" title="Unlock Zoom" onclick={unlockAndResetZoom}></lightning-button-icon>
+                                        <lightning-button-icon lwc:if={hasMultipleImages} icon-name="utility:chevronright" variant="border-filled" title="Next File" onclick={handleNextImage} disabled={isNextDisabled}></lightning-button-icon>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Form Fields -->
+                    <div class="slds-col slds-size_1-of_1 slds-large-size_5-of-12">
+                        <lightning-record-edit-form data-id="compliance-form" object-api-name={objectApiName} onsuccess={handleSuccess} onerror={handleError}>
+                            <lightning-messages> </lightning-messages>
+                            <lightning-input-field field-name={driverField} data-id="driver" value={_driverId} onchange={handleFieldChange}></lightning-input-field>
+                            <lightning-input-field field-name={carrierField} data-id="carrier" value={_carrierId} onchange={handleFieldChange}></lightning-input-field>
+                            <lightning-input class="slds-p-horizontal_xx-small" label="Insp Report #" data-id="inspReport" required value={inspReportValue} onchange={handleFieldChange}></lightning-input>
+                            <lightning-input-field field-name={challengeTypeField} data-id="challengeType" value={challengeTypeValue} onchange={handleFieldChange}></lightning-input-field>
+                            <lightning-input-field field-name={inspectionStatusField} data-id="inspectionStatus" value={inspectionStatusValue} onchange={handleFieldChange}></lightning-input-field>
+                        </lightning-record-edit-form>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="slds-modal__footer">
+                <lightning-button label="Cancel" onclick={handleCancel} disabled={isLoading}></lightning-button>
+                <lightning-button variant="brand" label="Save" onclick={handleSaveClick} class="slds-m-left_x-small" disabled={isLoading}></lightning-button>
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+
+    <!-- Full Screen Viewer Overlay -->
+    <div lwc:if={isFullScreenPreview} class="fullscreen-overlay">
+        <button class="slds-button slds-button_icon fullscreen-close-button" title="Close full screen" onclick={exitFullScreen}>
+            <lightning-icon icon-name="utility:close" alternative-text="Close" size="large" variant="bare-inverse"></lightning-icon>
+        </button>
+        <template lwc:if={hasMultipleImages}>
+            <button class="slds-button slds-button_icon fullscreen-prev-button" title="Previous File" onclick={handleFullScreenPrevious} disabled={isFullScreenPreviousDisabled}>
+                <lightning-icon icon-name="utility:chevronleft" size="large" variant="bare-inverse"></lightning-icon>
+            </button>
+            <button class="slds-button slds-button_icon fullscreen-next-button" title="Next File" onclick={handleFullScreenNext} disabled={isFullScreenNextDisabled}>
+                <lightning-icon icon-name="utility:chevronright" size="large" variant="bare-inverse"></lightning-icon>
+            </button>
+        </template>
+        <div class="fullscreen-content-wrapper">
+            <template lwc:if={isFullScreenFileAnImage}>
+                <img src={currentFileUrl} alt={currentFileName} class="fullscreen-image" style={fullScreenImageStyle} />
+            </template>
+            <template lwc:if={isFullScreenFileAPdf}>
+                <iframe src={currentFileUrl} title={currentFileName} class="fullscreen-pdf"></iframe>
+            </template>
+        </div>
+        <div class="fullscreen-bottom-controls">
+            <lightning-button-icon lwc:if={isFullScreenFileAnImage} icon-name="utility:zoomout" variant="border-filled" title="Zoom Out" onclick={handleFullScreenZoomOut} disabled={isFullScreenZoomOutDisabled}></lightning-button-icon>
+            <lightning-button-icon lwc:if={isFullScreenFileAnImage} icon-name="utility:rotate" variant="border-filled" title="Rotate Image" onclick={handleFullScreenRotate}></lightning-button-icon>
+            <p class="fullscreen-file-name">{currentFileName}</p>
+            <lightning-button-icon lwc:if={isFullScreenFileAnImage} icon-name="utility:zoomin" variant="border-filled" title="Zoom In" onclick={handleFullScreenZoomIn}></lightning-button-icon>
+        </div>
+    </div>
+</template>

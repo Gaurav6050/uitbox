@@ -1,0 +1,68 @@
+.image-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.image-viewer {
+    flex-grow: 1;
+    height: 500px;
+    overflow: hidden;   /* This is critical. Content inside scrolls, viewer frame does not. */
+    border: 1px solid #d8dde6;
+    background-color: #f3f3f3;
+    display: flex;       /* For centering the manual-image-container */
+    justify-content: center;
+    align-items: center;
+    position: relative; /* This is critical for .image-controls' absolute positioning. */
+}
+
+.manual-image-container {
+    /* This div wraps the manually injected <img> tag. */
+    /* It will become the scrollable content due to the image potentially being larger. */
+    display: flex; /* To center the image if it's smaller than this container */
+    justify-content: center;
+    align-items: center;
+    /*
+      The width/height here are not strictly necessary if the img tag itself
+      defines its max-width/height to 100% of this container.
+      But making it explicit can sometimes help.
+    */
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+    /* This element should NOT have position: absolute or fixed if it's the primary scrollable content */
+}
+
+.manual-image-container img {
+    display: block;
+    /* Styles from Apex for max-width, max-height, object-fit are primary. */
+    /* These are fallbacks. */
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.image-controls {
+    position: absolute; /* Positioned relative to .image-viewer's frame. */
+    bottom: 10px;
+    right: 10px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 8px;
+    border-radius: 4px;
+    z-index: 10;       /* Ensure controls are on top. */
+    display: flex;
+}
+
+.image-controls lightning-button-icon {
+    --sds-c-button-inverse-color-border: white;
+    --sds-c-button-icon-color-foreground: white;
+    --sds-c-button-icon-color-foreground-hover: lightgray;
+}
+
+.fields-section {
+    height: 530px;
+    overflow-y: auto;
+}
+
+.slds-modal__content {
+    overflow-y: auto;
+}

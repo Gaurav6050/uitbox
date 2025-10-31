@@ -1,0 +1,356 @@
+.image-section {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.image-viewer {
+    flex-grow: 1;
+    height: 650px;
+    border: 1px solid #d8dde6;
+    background-color: #f9f9f9;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.scroll-wrapper {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.image-container {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    cursor: crosshair;
+    width: 100%;
+    height: 100%;
+}
+
+.zoomable-image {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    transition: transform 0.1s ease-out, transform-origin 0s;
+}
+
+.pdf-viewer {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.image-loading-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(249, 249, 249, 0.85);
+    z-index: 5;
+    text-align: center;
+    color: #3e3e3c;
+}
+
+.image-controls {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.65);
+    padding: 6px 10px;
+    border-radius: 6px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.image-controls lightning-button-icon {
+    --sds-c-button-inverse-color-border: white;
+    --sds-c-button-icon-color-foreground: white;
+    --sds-c-button-icon-color-foreground-hover: lightgray;
+}
+
+.loading-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.error-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+/* --- Full Screen Styles --- */
+.fullscreen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.92);
+    z-index: 100000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.fullscreen-content-wrapper {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    overflow: auto;
+}
+
+.fullscreen-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s ease-in-out;
+    transform-origin: center center;
+}
+
+.fullscreen-pdf {
+    width: 90vw;
+    height: 90vh;
+    border: 1px solid #555;
+    box-shadow: 0 0 30px rgba(0,0,0,0.7);
+}
+
+.fullscreen-close-button {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 100002;
+}
+
+.fullscreen-bottom-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.65);
+    padding: 6px 15px;
+    border-radius: 6px;
+    z-index: 100002;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.fullscreen-bottom-controls lightning-button-icon {
+    --sds-c-button-inverse-color-border: white;
+    --sds-c-button-icon-color-foreground: white;
+    --sds-c-button-icon-color-foreground-hover: lightgray;
+}
+
+.fullscreen-file-name {
+    color: white;
+    font-size: 1rem;
+    max-width: 300px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fullscreen-prev-button, .fullscreen-next-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 100002;
+}
+.fullscreen-prev-button { left: 20px; }
+.fullscreen-next-button { right: 20px; }
+/* --- End Full Screen Styles --- */
+
+.fields-section {
+    height: 650px; 
+    overflow-y: auto;
+    padding-left: var(--lwc-spacingLarge, 1.5rem); 
+}
+
+.ocr-fields-container {}
+
+.field-section {
+    border: 1px solid #dddbda; 
+    padding: var(--lwc-spacingSmall, 0.75rem);
+    margin-bottom: var(--lwc-spacingSmall, 0.75rem);
+    border-radius: var(--lwc-borderRadiusMedium, 0.25rem);
+    background-color: #ffffff; 
+}
+
+.accuracy-checkbox lightning-input {}
+
+.driver-field-section {
+    border-bottom: 1px solid #e0e0e0; 
+    padding-bottom: var(--lwc-spacingMedium, 1rem) !important; 
+    margin-bottom: var(--lwc-spacingMedium, 1rem) !important;
+}
+
+.driver-field-section lightning-input-field {}
+
+.modal-spinner-container {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(255, 255, 255, 0.75);
+    z-index: 9003;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Record Edit Form Styles --- */
+.slds-section__title {
+    background-color: #f3f2f2;
+    padding-top: .25rem;
+    padding-bottom: .25rem;
+    margin-top: .5rem;
+    margin-bottom: .5rem;
+    font-weight: bold;
+}
+
+.slds-modal__container.slds-is-relative lightning-spinner {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background-color: rgba(255, 255, 255, 0.75);
+    z-index: 9999;
+    border-radius: .25rem;
+}
+
+/* --- Manual Parsing Styles --- */
+.processing-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 400px;
+    text-align: center;
+    padding: var(--lwc-spacingLarge, 1.5rem);
+    background-color: #f9f9f9;
+    border-radius: .25rem;
+}
+
+.processing-container .slds-text-heading_large {
+    color: #080707;
+}
+
+.processing-container .slds-text-color_weak {
+    margin-top: var(--lwc-spacingSmall, 0.75rem);
+    max-width: 450px;
+}
+
+.file-list {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--lwc-spacingLarge, 1.5rem);
+    max-height: 200px;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 500px;
+    border: 1px solid #dddbda;
+    border-radius: .25rem;
+    background-color: #ffffff;
+}
+
+.file-list-item {
+    display: flex;
+    align-items: center;
+    padding: var(--lwc-spacingSmall, 0.75rem) var(--lwc-spacingMedium, 1rem);
+    border-bottom: 1px solid #dddbda;
+}
+.file-list-item:last-child {
+    border-bottom: none;
+}
+
+.file-icon {
+    flex-shrink: 0;
+    margin-right: var(--lwc-spacingSmall, 0.75rem);
+}
+
+.file-name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+.file-list-item .slds-badge {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.processing-illustration {
+    width: 90px;
+    height: 105px;
+    background-color: #f3f9ff;
+    border: 1px solid #cce3ff;
+    border-radius: 4px;
+    position: relative;
+    margin-bottom: var(--lwc-spacingLarge, 1.5rem);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    clip-path: polygon(0 0, 75% 0, 100% 20%, 100% 100%, 0 100%);
+}
+
+.processing-illustration::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 27px;
+    height: 21px;
+    background-color: #dbeeff;
+    clip-path: polygon(0 100%, 100% 100%, 100% 0);
+    border-top-right-radius: 4px;
+}
+
+.processing-illustration::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%230176d3' viewBox='0 0 24 24'%3E%3Cpath d='M19.5 2h-15A2.5 2.5 0 002 4.5v15A2.5 2.5 0 004.5 22h15a2.5 2.5 0 002.5-2.5v-15A2.5 2.5 0 0019.5 2zM9.3 18.2l-3.5-3.5L7 13.5l2.3 2.3 5.7-5.7L16.2 11l-6.9 7.2z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
+.field-label-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
