@@ -1,0 +1,66 @@
+<template>
+    <div class="slds-form-element">
+        <label class="slds-form-element__label" for="lookup-input">
+            <template lwc:if={required}><abbr class="slds-required" title="required">* </abbr></template>
+            {label}
+        </label>
+        <div class="slds-form-element__control">
+            <template lwc:if={selectedRecord}>
+                <div class="slds-pill-container slds-grid slds-grid_vertical-align-center">
+                    <lightning-pill label={selectedRecord.Name} onremove={handleClearSelection}>
+                        <lightning-icon icon-name="standard:case" alternative-text="Court"></lightning-icon>
+                    </lightning-pill>
+                    <!-- The edit icon has been removed from here and moved to the parent -->
+                </div>
+            </template>
+            <template lwc:else>
+                <div class="slds-combobox_container">
+                    <div class={comboboxClasses} aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                        <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                            <lightning-input
+                                id="lookup-input" type="search" variant="label-hidden" label={label}
+                                placeholder="Search by Name, County, or State..." value={searchTerm} onchange={handleSearchChange}
+                                onfocus={handleFocus} onblur={handleBlur} required={required}>
+                            </lightning-input>
+                        </div>
+                        <template lwc:if={hasResultsOrNewOption}>
+                            <div id="listbox-id-1" class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" role="listbox" onscroll={handleScroll}>
+                                <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                                    <template lwc:if={showNewOption}>
+                                        <li role="presentation" class="slds-listbox__item new-item" onclick={handleNewCourtClick}>
+                                            <div class="slds-media slds-listbox__option slds-listbox__option_entity" role="option">
+                                                <span class="slds-media__figure slds-listbox__option-icon">
+                                                    <lightning-icon icon-name="utility:add" alternative-text="New"></lightning-icon>
+                                                </span>
+                                                <span class="slds-media__body">
+                                                    <span class="slds-listbox__option-text slds-listbox__option-text_entity">{newOptionText}</span>
+                                                </span>
+                                            </div>
+                                        </li>
+                                    </template>
+                                    <template for:each={searchResults} for:item="record">
+                                        <li key={record.Id} role="presentation" class="slds-listbox__item" onclick={handleRecordSelect} data-id={record.Id}>
+                                            <div class="slds-media slds-listbox__option slds-listbox__option_entity slds-listbox__option_has-meta" role="option">
+                                                <span class="slds-media__figure slds-listbox__option-icon">
+                                                    <lightning-icon icon-name="standard:case" alternative-text="Court"></lightning-icon>
+                                                </span>
+                                                <span class="slds-media__body">
+                                                    <span class="slds-listbox__option-text slds-listbox__option-text_entity">{record.Name}</span>
+                                                    <span class="slds-listbox__option-meta slds-listbox__option-meta_entity">{record.County__c}, {record.Address__StateCode__s} &middot; {record.Phone__c}</span>
+                                                </span>
+                                            </div>
+                                        </li>
+                                    </template>
+                                </ul>
+                                <div lwc:if={isLoadingMore} class="slds-align_absolute-center slds-p-vertical_small">
+                                    <lightning-spinner size="small"></lightning-spinner>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <div lwc:if={error} class="slds-text-color_error slds-m-top_xx-small">{error}</div>
+    </div>
+</template>
